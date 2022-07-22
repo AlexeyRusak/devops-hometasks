@@ -23,3 +23,5 @@
 - `git log`
 - `git log --abbrev-commit`
 - `git log --abbrev-commit --oneline`
+# Тестовое сообщение
+
