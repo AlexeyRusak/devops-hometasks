@@ -24,4 +24,4 @@
 - `git log --abbrev-commit`
 - `git log --abbrev-commit --oneline`
 # Тестовое сообщение
-
+- Текущее сообщение для второго коммита ветки master
