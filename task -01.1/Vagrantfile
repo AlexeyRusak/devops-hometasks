@@ -57,9 +57,10 @@ Vagrant.configure("2") do |config|
   #
   #   # Customize the amount of memory on the VM:
     vb.memory = "1024"
-    vb.name = "Centos8x"
+    vb.name = "Centos8"
    end
-   config.vm.hostname = "Centos8x"
+   config.vm.hostname = "Centos8"
+   config.vm.synced_folder ".", "/vagrant"
   #
   # View the documentation for the provider you are using for more
   # information on available options.
@@ -70,7 +71,7 @@ Vagrant.configure("2") do |config|
   # config.vm.provision "shell", inline: <<-SHELL
   #   apt-get update
   #   apt-get install -y apache2
-  # SHELL
+  # SHELLy
   config.vm.provision "shell", inline: <<-SHELL
   sudo yum update
   sudo yum -y install httpd
