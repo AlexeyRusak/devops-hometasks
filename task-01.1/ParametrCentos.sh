@@ -17,6 +17,7 @@ Listen 81
 
 sudo systemctl restart httpd
 sudo -i
+sudo firewall-cmd --permanent --add-service=http
 sudo mkdir /etc/httpd/sites-available /etc/httpd/sites-enabled
 echo "
 <VirtualHost *:80>

@@ -2,3 +2,4 @@ id_rsa.pub
 id_rsa
 /task-01/.vagrant
 /task -01.1/.vagrant
+*.vagrant
