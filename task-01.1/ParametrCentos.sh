@@ -8,7 +8,7 @@ sudo dnf -y install mysql-server
 sudo -i
 sudo mkdir -p /var/www/php
 echo "<?php phpinfo(); ?>" >> /var/www/php/index.php
-firewall-cmd --zone=public --add-port=81/tcp
+sudo firewall-cmd --zone=public --add-port=81/tcp --permanent
 echo "
 IncludeOptional conf.d/*.conf
 IncludeOptional sites-enabled/*.conf
@@ -17,7 +17,10 @@ Listen 81
 
 sudo systemctl restart httpd
 sudo -i
-sudo firewall-cmd --permanent --add-service=http
+sudo firewall-cmd --runtime-to-permanent
+sudo firewall-cmd --zone=public --add-service=https --permanent
+sudo systemctl enable firewalld
+sudo systemctl enable httpd
 sudo mkdir /etc/httpd/sites-available /etc/httpd/sites-enabled
 echo "
 <VirtualHost *:80>
