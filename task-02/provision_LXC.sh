@@ -15,20 +15,9 @@ apt remove gnupg -y
 apt install --reinstall gnupg2 -y
 apt install dirmngr
 
-export DOWNLOAD_KEYSERVER="hkp://keyserver.ubuntu.com"
-sudo apt-get install lxc lxc-templates
-sudo systemctl start lxc.service
-sudo systemctl enable lxc.service
-sudo systemctl start lxc-net.service
-sudo systemctl enable lxc-net.service
-
-#sudo apt-get install lxc -y
-sudo lxc-create -n test-container -t centos
-lxc-create -n c1 -t download -- --dist centos --release 8-Stream --arch amd64 
-
 sudo mkdir -p ~/.config/lxc/
 
-sudo ln -s /etc/lxc/default.conf ~/.config/lxc/default.conf 
+sudo ln -s /etc/lxc/default.conf  
 echo "
 lxc.idmap = u 0 100000 65536
 lxc.idmap = g 0 100000 65536" >> ~/.config/lxc/default.conf
@@ -36,3 +25,98 @@ sed -ie 's/lxc.apparmor.profile/unconfined/g' ~/.config/lxc/default.conf
 
 
 echo "kernel.unprivileged_userns_clone=1" >> /etc/sysctl.conf 
+
+sed -ie 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="net.ifnames=0 systemd.legacy_systemd_cgroup_controller=yes"/g' /etc/default/grub
+sudo update-grub
+systemctl reboot
+
+sudo -i
+echo "root veth lxcbr0 10" >> /etc/lxc/lxc-usernet
+echo '
+USE_LXC_BRIDGE="true"
+LXC_BRIDGE="lxcbr0"
+LXC_ADDR="10.0.3.1"
+LXC_NETMASK="255.255.255.0"
+LXC_NETWORK="10.0.3.0/24"
+LXC_DHCP_RANGE="10.0.3.2,10.0.3.254"
+LXC_DHCP_MAX="253"
+LXC_DHCP_CONFILE=""
+LXC_DOMAIN=""
+' >>/etc/default/lxc-net
+
+systemctl enable lxc-net
+systemctl start lxc-net
+
+echo "
+lxc.net.0.type  = veth
+lxc.net.0.flags = up
+lxc.net.0.link  = lxcbr0
+" >> ~/.config/lxc/default.conf
+
+iptables -t nat -A PREROUTING -p tcp -i eth0 --dport 80 -j DNAT --to-destination 10.0.3.80
+iptables -t nat -A PREROUTING -p tcp -i eth0 --dport 81 -j DNAT --to-destination 10.0.3.81
+
+#systemctl reboot
+#sudo apt-get install lxc -y
+#export DOWNLOAD_KEYSERVER="hkp://keyserver.ubuntu.com"
+#sudo lxc-create -n test-container -t centos
+sudo -i
+export DOWNLOAD_KEYSERVER="hkp://keyserver.ubuntu.com"
+sudo apt-get install lxc lxc-templates -y
+sudo systemctl start lxc.service
+sudo systemctl enable lxc.service
+sudo systemctl start lxc-net.service
+sudo systemctl enable lxc-net.service
+
+lxc-create -n c1 -t download -- --dist centos --release 8-Stream --arch amd64 --keyserver hkp://keyserver.ubuntu.com 
+lxc-start c1
+lxc-autostart -a
+lxc-attach c1
+
+lxc-attach c1 -- yum install -y -q httpd httpd-devel httpd-tools
+# # yum update -y
+# #   sudo yum update
+# #   sudo yum -y install httpd
+# #   sudo systemctl start  httpd
+# #   sudo firewall-cmd --permanent --add-service=http
+# #   sudo firewall-cmd --reload
+# #   sudo dnf update
+# # sudo dnf install dnf-utils
+# # sudo dnf install http://rpms.remirepo.net/enterprise/remi-release-8.rpm
+# # sudo dnf module reset php
+# # sudo dnf module install php:remi-8.0
+# # sudo dnf -y install php
+# # sudo dnf -y install mysql-server
+# # sudo -i
+# # sudo mkdir -p /var/www/php
+# # echo "<?php phpinfo(); ?>" >> /var/www/php/index.php
+# # sudo firewall-cmd --zone=public --add-port=81/tcp --permanent
+# # echo "
+# # IncludeOptional conf.d/*.conf
+# # IncludeOptional sites-enabled/*.conf
+# # Listen 81
+# # "  >> /etc/httpd/conf/httpd.conf
+
+# # sudo systemctl restart httpd
+# # sudo -i
+# # sudo firewall-cmd --runtime-to-permanent
+# # sudo firewall-cmd --zone=public --add-service=https --permanent
+# # sudo systemctl enable firewalld
+# # sudo systemctl enable httpd
+# # sudo mkdir /etc/httpd/sites-available /etc/httpd/sites-enabled
+# # echo "
+# # <VirtualHost *:80>
+# #   DocumentRoot "/var/www/html"
+# # </VirtualHost>
+# # <VirtualHost *:81>
+# #   DocumentRoot "/var/www/php/index.php"
+# # </VirtualHost>
+# # "  >> /etc/httpd/sites-available/php.conf
+# # sudo ln -s /etc/httpd/sites-available/php.conf /etc/httpd/sites-enabled/php.conf
+# # sudo setsebool -P httpd_unified 1
+# # sudo systemctl restart httpd
+# # # new centos8
+# # #/var/lib/lxc/c1/rootfs
+# # #for centos
+# # #cp /home/vagrant/index.html /var/www/html
+# # #cp /home/vagrant/index.php /var/www/php
