@@ -53,6 +53,7 @@ systemctl restart lxc-net
 
 lxc-create -n c1 -f /root/.config/lxc/default.conf -t download -- --dist centos --release 8-Stream --arch amd64 --keyserver hkp://keyserver.ubuntu.com 
 lxc-start c1
+sleep 10
 lxc-attach c1 -- yum install -y -q httpd httpd-devel httpd-tools
 lxc-attach c1 -- mkdir -p /var/www/html
 lxc-attach c1 -- cp /home/index.html /var/www/html
