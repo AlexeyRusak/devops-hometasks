@@ -19,7 +19,15 @@ apt install dirmngr
 echo "export DOWNLOAD_KEYSERVER="hkp://keyserver.ubuntu.com"" >> ~/.bashrc
 sudo mkdir -p ~/.config/lxc/
 
-sudo ln -s /etc/lxc/default.conf ~/.config/lxc/default.conf  
+sudo -i
+sudo apt-get install lxc lxc-templates -y
+sudo systemctl start lxc.service
+sudo systemctl enable lxc.service
+sudo systemctl start lxc-net.service
+sudo systemctl enable lxc-net.service
+systemctl restart lxc-net
+
+sudo cp /etc/lxc/default.conf ~/.config/lxc/default.conf  
 echo "
 lxc.idmap = u 0 100000 65536
 lxc.idmap = g 0 100000 65536" >> ~/.config/lxc/default.conf
@@ -30,19 +38,14 @@ echo "kernel.unprivileged_userns_clone=1" >> /etc/sysctl.conf
 
 sed -ie 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="net.ifnames=0 systemd.legacy_systemd_cgroup_controller=yes"/g' /etc/default/grub
 sudo update-grub
-systemctl reboot
+
 
 touch /etc/default/lxc-dhcp.conf
 echo "dhcp-host=c1,10.0.3.80" >> /etc/default/lxc-dhcp.conf
 
+systemctl reboot
 
-sudo -i
-sudo apt-get install lxc lxc-templates -y
-sudo systemctl start lxc.service
-sudo systemctl enable lxc.service
-sudo systemctl start lxc-net.service
-sudo systemctl enable lxc-net.service
-systemctl restart lxc-net
+
 
 sudo -i
 echo "root veth lxcbr0 10" >> /etc/lxc/lxc-usernet
@@ -75,6 +78,7 @@ iptables -t nat -A PREROUTING -p tcp -i eth0 --dport 81 -j DNAT --to-destination
 #export DOWNLOAD_KEYSERVER="hkp://keyserver.ubuntu.com"
 #sudo lxc-create -n test-container -t centos
 
+systemctl reboot
 
 lxc-create -n c1 -t download -- --dist centos --release 8-Stream --arch amd64 --keyserver hkp://keyserver.ubuntu.com 
 lxc-start c1
