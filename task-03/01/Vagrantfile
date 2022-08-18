@@ -13,8 +13,10 @@ config.vm.synced_folder ".", "/home"
  end
  config.vm.hostname = "Ansible01"
  config.vm.provision "shell", inline: <<-SHELL
-    apt-get update
+    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 93C4A3FD7BB9C367
+    sudo apt-get update
     sudo apt-get install ansible -y
+
 #  apt-get install -y apache2
   SHELL
 #config.vm.provision "shell", path: "provision_ansible_01.sh"
