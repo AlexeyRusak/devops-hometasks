@@ -9,12 +9,13 @@ config.vm.synced_folder ".", "/home"
  config.vm.provider "virtualbox" do |vb|
 
   vb.memory = "1024"
-  vb.name = "Ansible_01"
+  vb.name = "Ansible01"
  end
- config.vm.hostname = "Ansible_01"
-# config.vm.provision "shell", inline: <<-SHELL
-#    apt-get update
+ config.vm.hostname = "Ansible01"
+ config.vm.provision "shell", inline: <<-SHELL
+    apt-get update
+    sudo apt-get install ansible -y
 #  apt-get install -y apache2
-#  SHELL
-config.vm.provision "shell", path: "provision_ansible_01.sh"
+  SHELL
+#config.vm.provision "shell", path: "provision_ansible_01.sh"
 end
