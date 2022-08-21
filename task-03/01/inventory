@@ -1,0 +1,17 @@
+
+; Обращаю внимание, что используются разные ключи для разных хостов
+###Master	ansible_host=192.168.11.30  ansible_ssh_private_key_file=/home/vagrant/private_key_Master
+######Master	ansible_host=192.168.11.30  ansible_user=vagrant ansible_pass=vagrant
+Client_1	ansible_host=192.168.11.31 ansible_ssh_private_key_file=/home/vagrant/private_key_Client_1
+####Client_1	ansible_host=192.168.11.31 ansible_user=vagrant ansible_pass=vagrant
+##Client_2	ansible_host=192.168.11.32 ansible_ssh_private_key_file=/home/vagrant/private_key_Client_2
+; Здесь используем локальное подключение, т.к. на момент выполнения provision-а ключ для текущего сервера может ещё не существовать.
+ Master	ansible_host=192.168.11.30 ansible_connection=local
+ Client_1	ansible_host=192.168.11.31 ansible_connection=local
+ Client_2	ansible_host=192.168.11.32 ansible_connection=local
+ ####Client_2	ansible_host=192.168.11.32 ansible_user=vagrant ansible_pass=vagrant
+
+[all:vars]
+ansible_connection=ssh
+ansible_user=vagrant
+ansible_ssh_common_args='-o StrictHostKeyChecking=no'

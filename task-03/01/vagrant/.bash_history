@@ -5,3 +5,4 @@ ip a
 nano ~/.hosts
 ls ~/.hosts
 sudo -i
+ansible --version
