@@ -11,6 +11,7 @@ config.vm.provider "virtualbox" do |vb|
   vb.memory = "1024"
   vb.name = "Ansible01"
   end
+ ##### sudo systemctl restart apache2
 # config.vm.define "Master" do |node|
 #   node.vm.network "private_network", ip: "192.168.11.30"
 # end
@@ -23,11 +24,14 @@ config.vm.provider "virtualbox" do |vb|
 #   node.vm.network "private_network", ip: "192.168.11.32"
  ##config.vm.provider "virtualbox" do |vb|
   
-  
+  ##sudo apt install sshpass
   ## node.vm.provision :file, source: '.vagrant/machines/Master/virtualbox/private_key', destination: '/home/vagrant/private_key_Master'
   ## node.vm.provision :file, source: '.vagrant/machines/Client_1/virtualbox/private_key', destination: '/home/vagrant/private_key_Client_1'
   ##node.vm.provision :file, source: '.vagrant/machines/Client_2/virtualbox/private_key', destination: '/home/vagrant/private_key_Client_2'
   ##node.vm.provision :ansible_local do |ansible|
+  # # # # config.vm.provision "shell", inline: <<-SHELL
+  # # # #   sudo apt install sshpass
+  # # # # SHELL
   config.vm.provision :ansible_local do |ansible|
     # Имя файла сценария
     ansible.playbook       = "playbook.yml"
@@ -37,18 +41,18 @@ config.vm.provider "virtualbox" do |vb|
     ansible.limit          = "all"
 
     # Имя файла инвентаря
-    ansible.inventory_path = "inventory"
+    ####ansible.inventory_path = "inventory"
   end
-end
+#end
 #end
   
 #  config.vm.hostname = "Ansible01"
-  # config.vm.provision "shell", inline: <<-SHELL
+   ####config.vm.provision "shell", inline: <<-SHELL
   #    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 93C4A3FD7BB9C367
   #    sudo apt-get update
   #    sudo apt-get install ansible -y
-
+  ####sudo apt install sshpass
 # #  apt-get install -y apache2
- ##  SHELL
+   ####SHELL
 #config.vm.provision "shell", path: "provision_ansible_01.sh"
-#end
+end
