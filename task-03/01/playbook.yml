@@ -12,13 +12,13 @@
     # # # # # # # #     value: False
       #- name: Install apache2
       #  apt: name=apache2 state=latest
-    - name: Install Apache
+    - name: Install Apache and php
       apt:
            pkg:
            - php 
            - apache2
            state: present
-    - name: html
+    - name: copy html
       copy:
         src: /vagrant/index.html
         dest: /var/www/html
@@ -30,6 +30,17 @@
       args:
         chdir: /etc/apache2
         creates: http.conf
+    - name: copy php
+      copy:
+        src: /vagrant/index.php
+        dest: /var/www/php
+
+    - name: php sites-available
+      shell: echo '<VirtualHost *:81>  
+                  DocumentRoot "/var/www/php/index.php"
+                  </VirtualHost>' >> /etc/apache2/sites-available/000-default.conf
+      args:
+        chdir: /etc/apache2/sites-available   
   handlers:
     - name: Reload Apache
       service:
