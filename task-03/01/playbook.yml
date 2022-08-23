@@ -15,10 +15,43 @@
     - name: Install Apache
       apt:
            pkg:
-           - sshpass 
+           - php 
            - apache2
            state: present
+    - name: html
+      copy:
+        src: /vagrant/index.html
+        dest: /var/www/html
 
+    - name: Http
+      shell: echo '<VirtualHost *:80>  
+                  DocumentRoot "/var/www/Http/index.html"
+                  </VirtualHost>' >> /etc/apache2/http.conf
+      args:
+        chdir: /etc/apache2
+        creates: http.conf
+  handlers:
+    - name: Reload Apache
+      service:
+        name: apache2
+        state: reloaded
+
+    - name: Restart Apache
+      service:
+        name: apache2
+        state: restarted
+        
+
+##lxc-attach c1 -- mkdir -p /var/www/html
+# # # # cp /home/index.html /var/lib/lxc/c1/rootfs/var/www/html
+# # # # lxc-attach c1 -- touch /etc/apache2/http.conf 
+
+# # # # echo "
+# # # # <VirtualHost *:80>
+# # # #   DocumentRoot "/var/www/html"
+# # # # </VirtualHost>" >> /etc/apache2/http.confhttp.conf
+
+# # # # lxc-attach c1 -- systemctl restart httpd
 # # # # # Edit key-file permissions
 # # # # - name: Touch the file, but add/remove some permissions
 # # # #   hosts: node2
