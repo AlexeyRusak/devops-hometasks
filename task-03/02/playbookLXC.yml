@@ -1,0 +1,201 @@
+---
+
+- name: Install & configure LXC 
+  become: yes
+  hosts: all
+  tasks:
+
+  - name: Install Apache and php
+    apt:
+           pkg:
+           - lxc
+           - lxc-templates
+           - yum
+           state: present
+  - name: make dir and file
+    file:
+        path: /etc/default/lxc-net
+        state: touch
+  - file:    
+        path: /etc/lxc/lxc-usernet
+        state: touch
+  - file:
+        path: /var/lib/lxc/c1/rootfs/var/www/html
+        state: directory
+  - file:
+        path: /var/lib/lxc/c2/rootfs/var/www/php
+        state: directory
+  - name: lxc-dhcp
+    shell: echo "lxc.net.0.type = veth
+                \nlxc.net.0.flags = up
+                \nlxc.net.0.link = lxcbr0
+                \nlxc.apparmor.profile = unconfined
+                \nlxc.apparmor.allow_nesting = 1" > ~/.config/lxc/default.conf
+     args:
+         chdir: ~/.config/lxc/
+         creates: default.conf
+
+  - name: lxc-usernet
+    shell: echo "vagrant veth lxcbr0 10"  >> /etc/lxc/lxc-usernet
+     args:
+         chdir: /etc/lxc
+  
+  - name: lxc-dhcp
+    shell: echo "dhcp-host=c1,10.0.3.80
+                \ndhcp-host=c2,10.0.3.81" >> /etc/default/lxc-dhcp.conf
+     args:
+         chdir: /etc/default/
+         creates: lxc-dhcp.conf
+  
+  - name: conf lan
+    lineinfile:
+        path: /etc/default/lxc-net
+        line: "{{item}}"
+      with_items:
+         - USE_LXC_BRIDGE="true"
+         - LXC_BRIDGE="lxcbr0" 
+         - LXC_ADDR="10.0.3.1"
+         - LXC_NETMASK="255.255.255.0"
+         - LXC_NETWORK="10.0.3.0/24"
+         - LXC_DHCP_RANGE="10.0.3.2,10.0.3.254"
+         - LXC_DHCP_MAX="253"
+         - LXC_DHCP_CONFILE="/etc/default/lxc-dhcp.conf"
+         - LXC_DOMAIN=""
+  ##############################
+  - name: make c1
+    lxc_container:
+        name: c1
+        template: download
+        template_options: --dist centos --release 8-Stream --arch amd64 --keyserver hkp://keyserver.ubuntu.com
+        state: started
+        container_command: |
+          sleep 10
+          yum -y install httpd
+          yum -y install php
+          systemctl enable httpd
+          systemctl start httpd
+          sleep 5   
+    
+    - name: make c2
+      lxc_container:
+        name: c2
+        template: download
+        template_options: --dist centos --release 8-Stream --arch amd64 --keyserver hkp://keyserver.ubuntu.com
+        state: started
+        container_command: |
+          sleep 10
+          yum -y install httpd
+          yum -y install php
+          systemctl enable httpd
+          systemctl start httpd   
+          sleep 5          
+    - name: copy html & php
+      copy: 
+        src: /vagrant/index.html
+        dest: /var/lib/lxc/c1/rootfs/var/www/html/
+    - copy:
+        src: /vagrant/index.php
+        dest: /var/lib/lxc/c2/rootfs/var/www/php/
+
+    - name: Add port 81 conteiner 2
+      replace:
+        path: /var/lib/lxc/c2/rootfs/etc/httpd/conf/httpd.conf
+        regexp: 'Listen 80'
+        replace: 'Listen 81'
+
+    - name: VirtualHost conteiner 2
+      file:
+        path: /var/lib/lxc/c2/rootfs/etc/httpd/conf.d/default.conf
+        state: touch
+    - lineinfile:
+        path: /var/lib/lxc/c2/rootfs/etc/httpd/conf.d/default.conf
+        line: "{{item}}"
+      with_items:
+         - <VirtualHost *:81>
+         - DocumentRoot /var/www/php/ 
+         - </VirtualHost>
+
+    - name: VirtualHost conteiner 1
+      file:
+        path: /var/lib/lxc/c1/rootfs/etc/httpd/conf.d/default.conf
+        state: touch
+    - lineinfile:
+        path: /var/lib/lxc/c2/rootfs/etc/httpd/conf.d/default.conf
+        line: "{{item}}"
+      with_items:
+         - <VirtualHost *:80>
+         - DocumentRoot /var/www/html/ 
+         - </VirtualHost>
+
+########################################
+  - name: Restart Apache centos1
+    lxc_container:
+      name: c1
+      container_command: |
+        systemctl restart httpd
+  - name: Restart Apache c2
+    lxc_container:
+      name: centos2
+      container_command: |
+        systemctl restart httpd
+
+  - name: IPTABLES
+    shell: ip=$(sudo lxc-info -n c1 -iH);sudo iptables -t nat -I PREROUTING -i eth0 -p tcp --dport 80 -j DNAT --to-destination ${ip}:80
+  - shell: ip=$(sudo lxc-info -n c2 -iH);sudo iptables -t nat -I PREROUTING -i eth0 -p tcp --dport 81 -j DNAT --to-destination ${ip}:81
+
+
+        # shell: |
+        #   sudo iptables -t nat -A PREROUTING -p tcp -i enp0s3 --dport 3306 -j DNAT --to-destination 10.0.3.10:3306
+        #   sudo iptables -t nat -A PREROUTING -p tcp -i enp0s3 --dport 22 -j DNAT --to-destination 10.0.3.10:22
+        #   sudo iptables -t nat -A PREROUTING -p tcp -i enp0s3 --dport 22 -j DNAT --to-destination 10.0.3.11:22
+        #   sudo iptables -t nat -A PREROUTING -p tcp -i enp0s3 --dport 80 -j DNAT --to-destination 10.0.3.11:80         
+  # # # - name: copy html
+  # # #   copy:
+  # # #       src: /vagrant/index.html
+  # # #       dest: /var/www/html
+  # # # - name: Http & PHP
+  # # #   shell: echo '<VirtualHost *:80>  
+  # # #                 DocumentRoot "/var/www/Http/index.html"
+  # # #                 </VirtualHost>
+  # # #                 <VirtualHost *:81>  
+  # # #                 DocumentRoot "/var/www/php/index.php"
+  # # #                 </VirtualHost>' >> /etc/apache2/http.conf
+  # # #   args:
+  # # #       chdir: /etc/apache2
+  # # #       creates: http.conf
+  # # # - name: Create dir php
+  # # #   become: true
+  # # #   file:
+  # # #     path: /var/www/php
+  # # #     state: directory
+  # # #     owner: www-data
+  # # #     mode: '0755'  
+  # # # - name: copy php
+  # # #   copy:
+  # # #           src: /vagrant/index.php
+  # # #           dest: /var/www/php          
+  # # # - name: php ports
+  # # #   shell: echo 'Listen 81' >> /etc/apache2/ports.conf
+  # # #   args:
+  # # #       chdir: /etc/apache2
+  # # # - name: PHP Sites Avalable
+  # # #   shell: echo '<VirtualHost *:81>
+  # # #               \nServerAdmin webmaster@localhost
+  # # #               \nDocumentRoot /var/www/php
+  # # #               \nErrorLog ${APACHE_LOG_DIR}/error.log
+  # # #               \nCustomLog ${APACHE_LOG_DIR}/access.log combined
+  # # #               \n</VirtualHost>' > /etc/apache2/sites-available/000-default.conf
+  # # #   args:
+  # # #       chdir: /etc/apache2/sites-available
+  # # #   notify: Reload Apache
+
+  # handlers:
+  #   - name: Reload Apache
+  #     service:
+  #       name: apache2
+  #       state: reloaded
+
+  #   - name: Restart Apache
+  #     service:
+  #       name: apache2
+  #       state: restarted
