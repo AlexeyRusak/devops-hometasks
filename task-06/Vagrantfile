@@ -1,0 +1,48 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+Vagrant.configure("2") do |config|
+  config.vm.box = "generic/debian10"
+    
+  config.vm.network "forwarded_port", guest: 80, host: 8080
+  config.vm.network "forwarded_port", guest: 81, host: 8081
+
+  config.vm.synced_folder ".", "/vagrant"
+
+
+    config.vm.provider "virtualbox" do |vb|
+      vb.memory = 1024
+      vb.cpus   = 2
+      ##vb.name = "Jenkins"
+    end
+    config.vm.define "jenkins" do |jenkins|
+      jenkins.vm.network "private_network", ip: "192.168.33.11"
+      jenkins.vm.hostname = "jenkins"
+      config.vm.provision "shell", inline: <<-SHELL
+        sudo apt-get update
+        sudo apt install openjdk-11-jre -y
+        sed -i "s/^PasswordAuthentication no\$/PasswordAuthentication yes/g" /etc/ssh/sshd_config
+        service sshd restart
+        curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io.key | sudo tee \
+        /usr/share/keyrings/jenkins-keyring.asc > /dev/null
+        echo deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] \
+        https://pkg.jenkins.io/debian-stable binary/ | sudo tee \
+        /etc/apt/sources.list.d/jenkins.list > /dev/null
+        
+        sudo apt-get install jenkins
+        sudo apt-get install ansible -y
+        sudo systemctl enable jenkins
+        sudo systemctl start jenkins
+      SHELL
+       ## config.vm.provision :ansible_local do |ansible|
+          # Имя файла сценария
+       ##   ansible.playbook       = "playbookLXC.yml"
+
+          # Именно этот параметр ограничивает, какие хосты из inventory доступны для
+          #   выполнения сценария
+       ##   ansible.limit          = "all"
+
+          # Имя файла инвентаря
+       ##   ansible.inventory_path = "inventory"
+       ## end
+    end
+end
