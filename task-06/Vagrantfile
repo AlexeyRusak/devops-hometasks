@@ -8,7 +8,6 @@ Vagrant.configure("2") do |config|
 
   config.vm.synced_folder ".", "/vagrant"
 
-
     config.vm.provider "virtualbox" do |vb|
       vb.memory = 1024
      ## vb.cpus   = 2
@@ -25,11 +24,32 @@ Vagrant.configure("2") do |config|
         /etc/apt/sources.list.d/jenkins.list > /dev/null
         sudo apt-get update
         sudo apt install openjdk-11-jre -y
-        sudo apt-get install jenkins
+       ### sudo apt-get install jenkins
         sudo apt-get install ansible -y
-        sudo systemctl enable jenkins
-        sudo systemctl start jenkins
+        sudo apt-get install -y gnupg2
+       ### sudo systemctl enable jenkins
+       ### sudo systemctl start jenkins
       SHELL
+
+      jenkins.vm.provision :ansible_local do |ansible|
+        ansible.playbook = "jenkins.yaml"
+        ansible.galaxy_role_file = "role_file.yaml"
+        ansible.galaxy_roles_path = "/usr/share/ansible/collections"
+        ansible.galaxy_command = "sudo ansible-galaxy collection install -r%{role_file} -p%{roles_path} --force"
+  
+        ansible.groups   = {
+          "jenkins" => ["jenkins.vm"],
+  
+          "all:vars" => { "ansible_ssh_extra_args": "-o StrictHostKeyChecking=no",
+                          "ansible_connection": "ssh",
+                          "ansible_user": "vagrant",
+                          "ansible_password": "vagrant"}
+        }
+        ansible.host_vars = {
+          "jenkins.vm"    => { "ansible_host": "192.168.33.10" },
+        }
+        ansible.limit = "all"
+      end
        ## config.vm.provision :ansible_local do |ansible|
           # Имя файла сценария
        ##   ansible.playbook       = "playbookLXC.yml"

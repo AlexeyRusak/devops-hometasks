@@ -1,0 +1,71 @@
+Vagrant.configure("2") do |config|
+  
+  config.vm.box = "generic/centos8"
+  config.vm.network "private_network", ip: "192.168.33.20"
+  ##config.vm.network "forwarded_port", guest: 80, host: 8080
+  # # config.vm.network "forwarded_port", guest: 81, host: 8081
+  
+    config.vm.provider "virtualbox" do |vb|
+      vb.memory = "1024"
+      vb.name = "master.puppet"
+    end
+  config.vm.hostname = "master.puppet"
+  config.vm.synced_folder ".", "/vagrant"
+  
+  config.vm.provision "shell", inline: <<-SHELL
+      sudo yum update
+      # sudo yum -y install httpd
+      # sudo systemctl start  httpd
+      # sudo firewall-cmd --permanent --add-service=http
+      # sudo firewall-cmd --reload
+    SHELL
+  # # # # config.vm.provision "shell", path: "ParametrCentos.sh"
+end
+#########################################################################
+Vagrant.configure("2") do |config|
+  
+  config.vm.box = "generic/centos8"
+  config.vm.network "private_network", ip: "192.168.33.21"
+  ##config.vm.network "forwarded_port", guest: 80, host: 8080 
+  ##config.vm.network "forwarded_port", guest: 81, host: 8081
+  
+    config.vm.provider "virtualbox" do |vb|
+      vb.memory = "1024"
+      vb.name = "slave1.puppet"
+    end
+  config.vm.hostname = "slave1.puppet"
+  config.vm.synced_folder ".", "/vagrant"
+  
+  config.vm.provision "shell", inline: <<-SHELL
+      sudo yum update
+      # sudo yum -y install httpd
+      # sudo systemctl start  httpd
+      # sudo firewall-cmd --permanent --add-service=http
+      # sudo firewall-cmd --reload
+    SHELL
+  # # # # config.vm.provision "shell", path: "ParametrCentos.sh"
+end
+#################################################################################
+Vagrant.configure("2") do |config|
+  
+  config.vm.box = "generic/centos8"
+  ##config.vm.network "forwarded_port", guest: 80, host: 8080
+  ##config.vm.network "forwarded_port", guest: 81, host: 8081
+  config.vm.network "private_network", ip: "192.168.33.22"
+  
+    config.vm.provider "virtualbox" do |vb|
+      vb.memory = "1024"
+      vb.name = "slave2.puppet"
+    end
+  config.vm.hostname = "slave2.puppet"
+  config.vm.synced_folder ".", "/vagrant"
+  
+  config.vm.provision "shell", inline: <<-SHELL
+      sudo yum update
+      # sudo yum -y install httpd
+      # sudo systemctl start  httpd
+      # sudo firewall-cmd --permanent --add-service=http
+      # sudo firewall-cmd --reload
+    SHELL
+  # # # # config.vm.provision "shell", path: "ParametrCentos.sh"
+end
