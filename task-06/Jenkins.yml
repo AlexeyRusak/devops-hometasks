@@ -3,4 +3,4 @@
   hosts: jenkins
   become: true
   roles:
-    - role: '/vagrant/roles/jenkins'
+    - role: '/vagrant/roles/jenkins' 

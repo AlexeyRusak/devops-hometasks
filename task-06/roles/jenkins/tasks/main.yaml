@@ -1,0 +1,113 @@
+    - name: Install key for repo
+      apt_key:
+        url: https://pkg.jenkins.io/debian/jenkins.io.key
+        state: present
+    
+    - name: Add repo to repofile
+      apt_repository:
+        repo: deb https://pkg.jenkins.io/debian-stable binary/
+        state: present
+        update_cache: yes
+ 
+    - name: Install packeges all other
+      apt:
+        pkg:
+        - git
+        - build-essential 
+        - openjdk-11-jdk
+        - mc
+        - python3-pip
+        state: present
+        update_cache: yes
+
+    - name: Install Jenkins
+      apt:
+        pkg:
+        - jenkins
+        state: present
+        
+    - name: Install Payton
+      pip:
+        name:
+          - python-jenkins
+          - lxml
+ 
+    - name: Stop Jenkins service
+      service:
+        name: jenkins
+        state: stopped
+
+    - name: Make dirs
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: jenkins
+        group: jenkins
+      with_items:
+        - /var/lib/jenkins/users/admin_8133878285141068281
+        - /var/lib/jenkins/jobs/gobuild
+ 
+    - name: Copy config files
+      copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dst }}"
+        owner: jenkins
+        group: jenkins
+        force: yes
+      with_items:
+        - { src: "users/users.xml", dst: "/var/lib/jenkins/users/" }
+        - { src: "users/admin_8133878285141068281/config.xml", dst: "/var/lib/jenkins/users/admin_8133878285141068281/" }
+        - { src: "config.xml", dst: "/var/lib/jenkins/" }
+        - { src: "locale.xml", dst: "/var/lib/jenkins/" }
+        - { src: "org.jenkinsci.plugins.golang.GolangBuildWrapper.xml", dst: "/var/lib/jenkins/" }
+        - { src: "jobs/gobuild/config.xml", dst: "/var/lib/jenkins/jobs/gobuild/" }
+  
+    - name: Disable start wizard
+      lineinfile:
+         path: "{{ item.path }}"
+         state: present
+         regexp: "{{ item.exp }}"
+         line: "{{ item.n_ln }}"
+      with_items:
+        - { path: "/lib/systemd/system/jenkins.service", exp: '^Environment="JAVA_OPTS=-Djava.awt.headless=true"', n_ln: 'Environment="JAVA_OPTS=-Djava.awt.headless=true -Djenkins.install.runSetupWizard=false"' }
+        - { path: "/etc/default/jenkins", exp: '^JAVA_ARGS="-Djava.awt.headless=true"', n_ln: 'JAVA_ARGS="-Djava.awt.headless=true -Djenkins.install.runSetupWizard=false"' }
+
+    - name: reload systemd
+      systemd:
+        daemon_reload: yes
+
+    - name: Start Jenkins service
+      service:
+        name: jenkins
+        state: started
+
+    - name: Install plugin
+      jenkins_plugin:
+        name: "{{ item }}"
+        url_username: "{{ jenkins_user }}"
+        url_password: "{{ jenkins_passw }}"
+        url: "{{ jenkins_url }}"
+        with_dependencies: yes
+      with_items:
+        - locale
+        - git
+        - github
+        - golang
+        - Pipeline
+        - nexus-artifact-uploader
+        - timestamper
+      ignore_errors: yes
+
+    - name: Restart Jenkins service
+      service:
+        name: jenkins
+        state: restarted
+
+    - name: Create build
+      community.general.jenkins_build:
+        name: "gobuild"
+        build_number: 1
+        state: present
+        user: "{{ jenkins_user }}"
+        password: "{{ jenkins_passw }}"
+        url: "{{ jenkins_url }}"
