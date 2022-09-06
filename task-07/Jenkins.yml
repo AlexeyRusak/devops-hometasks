@@ -1,0 +1,6 @@
+---
+- name: Install Jenkins
+  hosts: jenkins
+  become: true
+  roles:
+    - role: '/vagrant/roles/jenkins' 
