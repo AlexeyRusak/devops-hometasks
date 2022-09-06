@@ -82,26 +82,25 @@
         name: jenkins
         state: started
 
-    - name: Install plugins for jenkins
+    - name: Install plugin
       jenkins_plugin:
-            name: "{{ item }}"
-            url_username: "{{ jenkins_user }}"
-            url_password: "{{ jenkins_passw }}"
-            url: "{{ jenkins_url }}"
-            with_dependencies: yes
+        name: "{{ item }}"
+        url_username: "{{ jenkins_user }}"
+        url_password: "{{ jenkins_passw }}"
+        url: "{{ jenkins_url }}"
+        with_dependencies: yes
       with_items:
-          - git
-          - github
-          - golang
-          - Pipeline
-          - nexus-artifact-uploader
-          - ssh
-          - ssh-agent
-          - ssh-slaves
-          - SSH-Build-Agents
+        - locale
+        - git
+        - github
+        - golang
+        - Pipeline
+        - nexus-artifact-uploader
+        - timestamper
       ignore_errors: yes
-
-    - name: Restart_Jenkins
+    
+    - name: Restart Jenkins service
       service:
         name: jenkins
         state: restarted
+   
