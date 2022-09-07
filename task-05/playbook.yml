@@ -1,0 +1,145 @@
+---
+- hosts: all
+  become: true
+  tasks:
+
+    - name: Add Puppet repo
+      dnf:
+        name: https://yum.puppet.com/puppet7-release-el-8.noarch.rpm
+        disable_gpg_check: yes
+
+    - name: Stop firewall
+      service:
+        name: firewalld
+        state: stopped
+
+    - name: Set timezone Europe/Minsk
+      command: /usr/bin/timedatectl set-timezone Europe/Minsk
+
+    - name: Install a list of packages
+      dnf:
+       name:
+        - mc
+        - nano
+       state: present
+
+- name: Configure master
+  hosts: master
+  become: yes
+  tasks:
+
+    - name: Install a list of packages
+      dnf:
+       name:
+        - puppetserver
+        - git
+       state: present
+
+    - name: Export PATH #этот блок вставил чтоб згззуе работал после перезагрузки (reload provision)
+      lineinfile:
+        dest: /etc/environment
+        line: "PATH=/home/vagrant/.local/bin:/home/vagrant/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/opt/puppetlabs/bin:/opt/puppetlabs/puppet/bin"
+
+    - name: install  r10k
+      shell: /opt/puppetlabs/puppet/bin/gem install r10k
+
+    - name: Create a directory r10k
+      file:
+        path: /etc/puppetlabs/r10k
+        state: directory
+        mode: '0775'
+
+    - name: Touch /etc/puppetlabs/r10k/r10k.yaml
+      file:
+        path: /etc/puppetlabs/r10k/r10k.yaml
+        state: touch
+
+    - name: add config r10k
+      blockinfile:
+        path: /etc/puppetlabs/r10k/r10k.yaml
+        block: |
+          ---
+          :cachedir: '/var/cache/r10k'
+          :sources:
+            :my-org:
+              remote: 'https://github.com/te0s/puppet.git'
+              basedir: '/etc/puppetlabs/code/environments'
+
+    - name: Change Ram
+      become: yes
+      replace:
+        path: /etc/sysconfig/puppetserver
+        regexp: 'JAVA_ARGS="-Xms2g -Xmx2g'
+        replace: 'JAVA_ARGS="-Xms256m -Xmx256m'
+
+    - name: ADD hosts
+      lineinfile:
+        path: /etc/hosts
+        line: "{{item}}"
+      with_items:
+         - '192.168.33.20 master.puppet'
+         - '192.168.33.11 slave1.puppet'
+         - '192.168.33.12 slave2.puppet'
+         - '192.168.33.13 mineserver.puppet'
+
+    - name: set master.puppet agent #<-------ЗАТЫКА была здесь и в site.pp (include nginx - пишется всё маленькими буквами)
+      ini_file:
+        path: /etc/puppetlabs/puppet/puppet.conf
+        section: "{{ item.sect }}"
+        option: "{{ item.option }}"
+        value: "{{ item.value }}"
+      with_items:
+        - { sect: "server", option: "autosign", value: "true" }
+        - { sect: "agent", option: "server", value: "master.puppet" }
+        - { sect: "agent", option: "runinterval", value: "1m" }
+
+    - name: Stop and disable firewalld
+      service:
+        name: firewalld
+        state: stopped
+        enabled: False
+
+    - name: Enable Puppetserver
+      service:
+        name: puppetserver
+        enabled: yes
+        state: started
+
+    - name: Enable Puppetagent
+      service:
+        name: puppet
+        enabled: yes
+        state: started
+
+    - name: Deploy environment
+      shell: 'r10k deploy environment -p'
+
+- name: Install soft slave
+  hosts: slave, mine
+  become: yes
+  tasks:
+
+    - name: install puppetagent
+      dnf:
+       name: puppet-agent
+       state: latest
+
+    - name: ADD hosts
+      lineinfile:
+        path: /etc/hosts
+        line: '192.168.56.100 master.puppet puppet'
+
+    - name: Make connect to puppet-server
+      lineinfile:
+        path: /etc/puppetlabs/puppet/puppet.conf
+        line: "{{item}}"
+      with_items:
+         - '[agent]'
+         - server = master.puppet
+         - runinterval = 1m
+
+    - name: Enable Puppetagent
+      service:
+        name: puppet
+        enabled: yes
+        state: started
