@@ -6,6 +6,7 @@
     - name: Add Puppet repo
       dnf:
         name: https://yum.puppet.com/puppet7-release-el-8.noarch.rpm
+        state: present
         disable_gpg_check: yes
 
     - name: Stop firewall
