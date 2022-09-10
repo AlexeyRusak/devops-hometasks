@@ -14,7 +14,7 @@
         state: stopped
 
     - name: Set timezone Europe/Minsk
-      command: /usr/bin/timedatectl set-timezone Europe/Minsk ######################################################
+      command: /usr/bin/timedatectl set-timezone Europe/Minsk
 
     - name: Install a list of packages 
       dnf:
@@ -74,7 +74,7 @@
         regexp: 'JAVA_ARGS="-Xms2g -Xmx2g'
         replace: 'JAVA_ARGS="-Xms256m -Xmx256m'
 
-    - name: ADD hosts    ###############################################################################
+    - name: ADD hosts    
       lineinfile:
         path: /etc/hosts
         line: "{{item}}"
@@ -118,7 +118,7 @@
        name: puppet-agent
        state: latest
 
-    - name: ADD hosts    ###############################################################################
+    - name: ADD hosts    
       lineinfile:
         path: /etc/hosts
         line: '192.168.33.20 master.puppet puppet'

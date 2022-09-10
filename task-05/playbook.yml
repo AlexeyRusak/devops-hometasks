@@ -35,7 +35,7 @@
         - git
        state: present
 
-    - name: Export PATH #этот блок вставил чтоб згззуе работал после перезагрузки (reload provision)
+    - name: Export PATH 
       lineinfile:
         dest: /etc/environment
         line: "PATH=/home/vagrant/.local/bin:/home/vagrant/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/opt/puppetlabs/bin:/opt/puppetlabs/puppet/bin"
@@ -62,7 +62,7 @@
           :cachedir: '/var/cache/r10k'
           :sources:
             :my-org:
-              remote: 'https://github.com/te0s/puppet.git'
+              remote: 'https://github.com/Fenikks/puppet-master-repo.git'  
               basedir: '/etc/puppetlabs/code/environments'
 
     - name: Change Ram
@@ -82,7 +82,7 @@
          - '192.168.33.12 slave2.puppet'
          - '192.168.33.13 mineserver.puppet'
 
-    - name: set master.puppet agent #<-------ЗАТЫКА была здесь и в site.pp (include nginx - пишется всё маленькими буквами)
+    - name: set master.puppet agent 
       ini_file:
         path: /etc/puppetlabs/puppet/puppet.conf
         section: "{{ item.sect }}"
@@ -127,7 +127,7 @@
     - name: ADD hosts
       lineinfile:
         path: /etc/hosts
-        line: '192.168.56.100 master.puppet puppet'
+        line: '192.168.33.20 master.puppet puppet'
 
     - name: Make connect to puppet-server
       lineinfile:
