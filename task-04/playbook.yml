@@ -55,7 +55,7 @@
           :cachedir: '/var/cache/r10k'
           :sources:
             :my-org: 
-              remote: 'https://github.com/Fenikks/puppet-master-repo.git'  
+              remote: 'https://github.com/AlexeyRusak/Puppet.git'  
               basedir: '/etc/puppetlabs/code/environments'
     - name: Create a directory /var/cache/r10k if it does not exist
       file:
