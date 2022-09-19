@@ -5,7 +5,7 @@ localhost ansible_connection=local
 slave1.puppet ansible_host=192.168.33.11 
 slave2.puppet ansible_host=192.168.33.12 
 
-[all:vars]
+[all:where]
 ansible_ssh_common_args='-o StrictHostKeyChecking=no'
 ansible_connection=ssh
 ansible_user=vagrant
