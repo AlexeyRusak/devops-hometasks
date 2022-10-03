@@ -2,4 +2,4 @@
 ansible_python_interpreter: /usr/bin/python3
 jenkins_user: admin
 jenkins_passw: admin
-jenkins_url: http://192.168.33.10/:8080
+jenkins_url: http://localhost:8080

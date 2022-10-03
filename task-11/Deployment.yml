@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: static-deployment
+spec:
+  selector:
+    matchLabels:
+      app: static-site
+  replicas: 3 # запускает 3 пода, созданных по шаблону
+  template:
+    metadata:   # данные, позволяющие идентифицировать объект
+      labels:
+        app: static-site
+    spec:    # требуемое состояние обьекта 
+      containers:
+      - name: static-site
+        image: alexeyrusak/deployment:latest
+        ports:
+        - containerPort: 80
+        readinessProbe:
+          initialDelaySeconds: 10
+          timeoutSeconds: 1
+          httpGet:
+            path: /
+            port: 80
+        livenessProbe:
+          initialDelaySeconds: 10
+          timeoutSeconds: 1
+          httpGet:
+            path: /
+            port: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: static-site-service
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: static-site

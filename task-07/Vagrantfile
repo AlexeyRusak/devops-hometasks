@@ -1,55 +1,94 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
+
 Vagrant.configure("2") do |config|
   config.vm.box = "generic/debian10"
-    
-  config.vm.network "forwarded_port", guest: 80, host: 8080
-  config.vm.network "forwarded_port", guest: 81, host: 8081
-
-  config.vm.synced_folder ".", "/vagrant"
 
   config.vm.provider "virtualbox" do |vb|
-    vb.memory = 1024
+    vb.memory = 1512
+    vb.cpus   = 1
   end
-    
-    config.vm.define "jenkins" do |jenkins|
-      jenkins.vm.network "private_network", ip: "192.168.33.10"
-      jenkins.vm.provision "shell", inline: <<-SHELL     
-        curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io.key | sudo tee \
-        /usr/share/keyrings/jenkins-keyring.asc > /dev/null
-        echo deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] \
-        https://pkg.jenkins.io/debian-stable binary/ | sudo tee \
-        /etc/apt/sources.list.d/jenkins.list > /dev/null
-        sudo apt-get update
-        sudo apt install openjdk-11-jre -y
-        sudo apt-get install ansible -y
-        sudo apt-get install -y gnupg2
-     
-        SHELL
-            
-        jenkins.vm.provision :ansible_local do |ansible|
-          ansible.playbook = "jenkins.yml"
-          ansible.galaxy_role_file = "role_file.yml"
-          ansible.galaxy_roles_path = "/usr/share/ansible/collections"
-          ansible.galaxy_command = "sudo ansible-galaxy collection install -r%{role_file} -p%{roles_path} --force"
 
-          ansible.groups   = {
-            "jenkins" => ["jenkins.vm"],
+  config.vm.define "production.vm", primary: true do |production|
+    production.vm.hostname = "production.vm"
+    production.vm.network "private_network", ip: "192.168.50.40"
+    production.vm.provider("virtualbox") { |vb| vb.memory = 256 }
+    production.vm.synced_folder ".", "/vagrant"
+  end
 
-            "all:vars" => { "ansible_ssh_extra_args": "-o StrictHostKeyChecking=no",
-                            "ansible_connection": "ssh",
-                            "ansible_user": "vagrant",
-                            "ansible_password": "vagrant"}
-          }
-          ansible.host_vars = {
-            "jenkins.vm"    => { "ansible_host": "192.168.33.10" },
-          }
-          ansible.limit = "all"
-        end
-      end  
-      
-      config.vm.provision "shell", inline: <<-SHELL
-        sed -i "s/^PasswordAuthentication no\$/PasswordAuthentication yes/g" /etc/ssh/sshd_config
-        service sshd restart
-      SHELL
+  config.vm.define "staging.vm", primary: true do |staging|
+    staging.vm.hostname = "staging.vm"
+    staging.vm.network "private_network", ip: "192.168.50.30"
+    staging.vm.provider("virtualbox") { |vb| vb.memory = 256 }
+    staging.vm.synced_folder ".", "/vagrant"
+  end
+
+  config.vm.define "nexus.vm", primary: true do |nexus|
+    nexus.vm.hostname = "nexus.vm"
+    nexus.vm.network "private_network", ip: "192.168.50.20"
+    nexus.vm.provider("virtualbox") { |vb| vb.memory = 2048 }
+    nexus.vm.synced_folder ".", "/vagrant"
+    nexus.vm.provision "shell", inline: <<-SHELL
+      apt update  
+      apt install -y gnupg2 software-properties-common
+      wget -qO - https://adoptopenjdk.jfrog.io/adoptopenjdk/api/gpg/key/public | sudo apt-key add -
+      add-apt-repository --yes https://adoptopenjdk.jfrog.io/adoptopenjdk/deb/
+      apt update -y
+      apt install -y adoptopenjdk-8-hotspot
+      sed -i "s/^PasswordAuthentication no\$/PasswordAuthentication yes/g" /etc/ssh/sshd_config
+      service sshd restart
+      echo -e "vagrant\nvagrant" | passwd vagrant
+    SHELL
+  end
+
+
+  config.vm.define "jenkins.vm", primary: true do |jenkins|
+    jenkins.vm.hostname = "jenkins.vm"
+    jenkins.vm.network "private_network", ip: "192.168.50.10"
+    jenkins.vm.synced_folder ".", "/vagrant"
+    jenkins.vm.provision "shell", inline: <<-SHELL
+      apt update  
+      apt install -y gnupg2
+      apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 93C4A3FD7BB9C367
+      echo "deb http://ppa.launchpad.net/ansible/ansible/ubuntu bionic main" >> /etc/apt/sources.list
+      apt update
+      apt install -y ansible python-pip
+      pip install jmespath
+    SHELL
+
+    jenkins.vm.provision "ansible_local" do |ansible|
+      ansible.playbook = "ply_role_jenkins.yaml"
+      ansible.galaxy_role_file = "inventory/requirements.yaml"
+      ansible.galaxy_roles_path = "/usr/share/ansible/collections"
+      ansible.galaxy_command = "sudo ansible-galaxy collection install -r%{role_file} -p%{roles_path} --force"
+
+      ansible.groups   = {
+        "jenkins" => ["jenkins.vm"],
+        "nexus"   => ["nexus.vm"],
+        "staging" => ["staging.vm"],
+	"production" => ["nexus.vm"],
+
+        "all:vars" => { "ansible_python_interpreter": "/usr/bin/python3",
+                        "ansible_ssh_extra_args": "-o StrictHostKeyChecking=no",
+                        "ansible_connection": "ssh",
+                        "ansible_user": "vagrant",
+                        "ansible_password": "vagrant"}
+      }
+      ansible.host_vars = {
+        "jenkins.vm"    => { "ansible_host": "192.168.50.10" },
+        "nexus.vm"      => { "ansible_host": "192.168.50.20" },
+        "staging.vm"    => { "ansible_host": "192.168.50.30" },
+        "production.vm" => { "ansible_host": "192.168.50.40" },
+
+      }
+      ansible.limit = "all"
+    end
+  end
+
+  config.vm.provision "shell", inline: <<-SHELL
+    sed -i "s/^PasswordAuthentication no\$/PasswordAuthentication yes/g" /etc/ssh/sshd_config
+    service sshd restart
+    echo -e "vagrant\nvagrant" | passwd vagrant
+  SHELL
+  
 end

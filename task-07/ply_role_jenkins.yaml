@@ -1,0 +1,13 @@
+---
+- name: Install Nexus
+  hosts: nexus
+  become: true
+  roles:
+    - role: '/vagrant/roles/nexus3-oss' 
+
+- name: Install Jenkins
+  hosts: jenkins
+  become: true
+  roles:
+    - role: '/vagrant/roles/jenkins' 
+
