@@ -14,7 +14,7 @@ spec:
     spec:    # требуемое состояние обьекта 
       containers:
       - name: static-site
-        image: alexeyrusak/deployment:latest
+        image: alexeyrusak/deployment:debian
         ports:
         - containerPort: 80
         readinessProbe:
