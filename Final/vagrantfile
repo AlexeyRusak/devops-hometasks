@@ -1,0 +1,15 @@
+Vagrant.configure("2") do |config|
+
+  config.vm.box = "generic/debian10"
+  config.vm.synced_folder  ".", "/vagrant", disabled: false
+  config.vm.network "private_network", ip: "192.168.10.10"
+  config.vm.provision "shell", inline: <<-SHELL
+    apt-get update
+    #install docker-compose
+    apt-get install -y docker.io docker-compose
+    usermod -aG docker vagrant
+    # start build docker-compose project
+    cd /vagrant
+    docker-compose up -d --build
+  SHELL
+end
