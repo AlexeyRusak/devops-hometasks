@@ -1,8 +1,0 @@
----
-- name: Install Nexus
-  hosts: localhost
-  become: true
-  pre_tasks:
-    - include_tasks: '/tmp/nexus/nexus_tasks.yml'
-  roles:
-    - nexus3-oss
