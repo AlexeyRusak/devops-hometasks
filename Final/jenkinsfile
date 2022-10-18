@@ -16,10 +16,10 @@ pipeline {
                // sh '''
                sh 'make'
                 //make lint && make test
-                 if [ $? -ne 0 ];
-                    then
-                        echo "Test error"
-                        exit 1
+                // if [ $? -ne 0 ];
+                 //   then
+                 //       echo "Test error"
+                  //      exit 1
                     fi
                 export GOPATH=$WORKSPACE/go
                 export PATH="$PATH:$(go env GOPATH)/bin"               
