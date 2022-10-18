@@ -12,9 +12,10 @@ pipeline {
                }
             }
             steps {
-                git url: 'https://github.com/Fenikks/word-cloud-generator'
-                sh '''
-                make lint && make test
+                git url: 'https://github.com/AlexeyRusak/word-cloud-generator'
+               // sh '''
+               sh 'make'
+                //make lint && make test
                  if [ $? -ne 0 ];
                     then
                         echo "Test error"
